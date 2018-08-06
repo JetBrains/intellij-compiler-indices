@@ -6,4 +6,5 @@ trait CompilationInfo {
   def affectedModules: Set[String]
   def removedSources: Set[File]
   def generatedClasses: Set[CompiledClass]
+  def startTimestamp: Long
 }

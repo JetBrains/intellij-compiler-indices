@@ -7,5 +7,6 @@ import org.jetbrains.plugins.scala.indices.protocol.{CompilationInfo, CompiledCl
 final case class JpsCompilationInfo(
   override val affectedModules:  Set[String],
   override val removedSources:   Set[File],
-  override val generatedClasses: Set[CompiledClass]
+  override val generatedClasses: Set[CompiledClass],
+  override val startTimestamp:   Long
 ) extends CompilationInfo

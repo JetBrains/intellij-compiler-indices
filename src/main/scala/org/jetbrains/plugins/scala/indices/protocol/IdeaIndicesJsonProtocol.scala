@@ -9,5 +9,4 @@ trait IdeaIndicesJsonProtocol
     with JpsCompilationInfoJsonProtocol
 
 object IdeaIndicesJsonProtocol extends IdeaIndicesJsonProtocol {
-  val ACK: String = "ACK"
 }
