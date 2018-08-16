@@ -5,9 +5,9 @@ import java.net.Socket
 import java.util.{Optional, UUID}
 
 import org.jetbrains.plugins.scala.indices.protocol.CompiledClass
-import org.jetbrains.plugins.scala.indices.protocol.IdeaIndicesJsonProtocol.ACK
 import org.jetbrains.plugins.scala.indices.protocol.IdeaIndicesJsonProtocol._
-import org.jetbrains.plugins.scala.indices.protocol.sbt.SbtCompilationInfo
+import org.jetbrains.plugins.scala.indices.protocol.sbt._
+import org.jetbrains.plugins.scala.indices.protocol.sbt.Locking.FileLockingExt
 import sbt.Keys._
 import sbt.internal.inc.Analysis
 import sbt.plugins.{CorePlugin, JvmPlugin}
@@ -31,7 +31,6 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
 
   private[this] def perConfig: Seq[Def.Setting[_]] = Seq(
     incrementalityType := IncrementalityType.Incremental,
-    cleanKeepFiles     += target.value / compilationInfoDir,
     manipulateBytecode := Def.taskDyn {
       val compilationId = UUID.randomUUID()
       val version       = scalaVersion.value
@@ -39,7 +38,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
       val project       = thisProject.value.id
       val buildBaseDir  = (baseDirectory in ThisBuild).value
       val port          = ideaPort.value
-      val socket        = notifyIdeaStart(port, compilationId)
+      val socket        = notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
       val targetDir     = target.value
 
       val previousResult = itype match {
@@ -47,13 +46,12 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
         case IncrementalityType.NonIncremental => PreviousResult.create(Optional.empty(), Optional.empty())
       }
 
+      val compilationStartTimestamp = System.currentTimeMillis()
       Def.task {
-        val compilationFinishTimestamp = System.currentTimeMillis() // this is actually executed after actual compilation
-
         val oldTaskValue = compileIncremental.result.value match {
           case Inc(inc) =>
             socket.foreach { s =>
-              val result = CompilationResult(successful = false, compilationFinishTimestamp, compilationId, None)
+              val result = CompilationResult(successful = false, compilationStartTimestamp, compilationId, None)
               notifyFinish(s, result)
               s.close()
             }
@@ -70,10 +68,16 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
             buildBaseDir,
             version,
             itype,
-            targetDir / compilationInfoDir,
+            targetDir / compilationInfoDirName,
+            compilationStartTimestamp,
             compilationId
           )
-          val result = CompilationResult(successful = true, compilationFinishTimestamp, compilationId, Option(compilationInfoFile))
+          val result = CompilationResult(
+            successful = true,
+            compilationStartTimestamp,
+            compilationId,
+            Option(compilationInfoFile)
+          )
           socket.foreach(notifyFinish(_, result))
           oldTaskValue
         } finally socket.foreach(_.close())
@@ -88,26 +92,30 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
 }
 
 object IntelliJIndexer {
-  val compilationInfoDir: String = "idea-compilation-info"
-
-  def notifyIdeaStart(port: Int, compilationId: UUID): Option[Socket] = {
+  def notifyIdeaStart(port: Int, projectBase: String, compilationId: UUID): Option[Socket] = {
     val socket = Try(new Socket("localhost", port))
 
     socket.toOption.map { s =>
-      val in = new DataInputStream(s.getInputStream())
+      val in  = new DataInputStream(s.getInputStream())
+      val out = new DataOutputStream(s.getOutputStream())
+      out.writeUTF(projectBase)
+      out.writeUTF(compilationId.toString)
       val ack = in.readUTF()
-      if (ack != ACK) throw new RuntimeException("Malformed response from IDEA.")
+      if (ack != ideaACK) throw new RuntimeException("Malformed response from IDEA.")
       s
     }
   }
 
   def notifyFinish(socket: Socket, result: CompilationResult): Unit =
     try {
+      val in = new DataInputStream(socket.getInputStream())
       val out = new DataOutputStream(socket.getOutputStream())
       out.writeBoolean(result.successful)
-      out.writeLong(result.finishTimestamp)
+      out.writeLong(result.startTimestamp)
       out.writeUTF(result.compilationId.toString)
       result.infoFile.foreach(f => out.writeUTF(f.getPath))
+      val ack = in.readUTF()
+      if (ack != ideaACK) throw new RuntimeException("Malformed response from IDEA.")
     } finally socket.close()
 
   sealed trait IncrementalityType
@@ -124,9 +132,10 @@ object IntelliJIndexer {
     scalaVersion:       String,
     incrementalityType: IncrementalityType,
     compilationInfoDir: File,
+    timestamp:          Long,
     compilationId:      UUID
   ): File = {
-    val analysis = canalysis.asInstanceOf[Analysis]
+    val analysis     = canalysis.asInstanceOf[Analysis]
     val prevAnalysis = prev.analysis().orElse(Analysis.Empty).asInstanceOf[Analysis]
 
     val currentStamps = analysis.stamps
@@ -145,7 +154,6 @@ object IntelliJIndexer {
 
     val compilationInfo = SbtCompilationInfo(
       project,
-      buildBaseDir.getPath,
       isIncremental,
       scalaVersion,
       timestamp,
@@ -153,10 +161,14 @@ object IntelliJIndexer {
       generatedClasses
     )
 
-    val compilationInfoFile = compilationInfoDir / s"sbt-compilation-info-${compilationId.toString}"
-    val out                 = new PrintWriter(new BufferedWriter(new FileWriter(compilationInfoFile)))
-    out.print(compilationInfo.toJson.compactPrint)
-    out.close()
+    val compilationInfoFile = compilationInfoDir / s"$compilationInfoFilePrefix-${compilationId.toString}"
+
+    buildBaseDir.withLockInDir {
+      val out = new PrintWriter(new BufferedWriter(new FileWriter(compilationInfoFile)))
+      out.print(compilationInfo.toJson.compactPrint)
+      out.close()
+    }
+
     compilationInfoFile
   }
 }

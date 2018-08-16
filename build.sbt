@@ -4,7 +4,7 @@ lazy val root = (project in file("."))
     organization  := "org.jetbrains",
     name          := "sbt-idea-compiler-indices",
     scalaVersion  := "2.12.6",
-    version       := "0.1",
+    version       := "0.1.0",
     description   := "sbt plugin for writing IntelliJ bytecode indices",
     scalacOptions := Seq(
       "-Ypartial-unification",

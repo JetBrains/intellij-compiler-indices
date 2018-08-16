@@ -5,7 +5,7 @@ import java.util.UUID
 
 final case class CompilationResult(
   successful:      Boolean,
-  finishTimestamp: Long,
+  startTimestamp:  Long,
   compilationId:   UUID,
   infoFile:        Option[File]
 ) {
