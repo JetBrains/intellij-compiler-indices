@@ -8,5 +8,4 @@ trait IdeaIndicesJsonProtocol
     with SbtCompilationInfoJsonProtocol
     with JpsCompilationInfoJsonProtocol
 
-object IdeaIndicesJsonProtocol extends IdeaIndicesJsonProtocol {
-}
+object IdeaIndicesJsonProtocol extends IdeaIndicesJsonProtocol
