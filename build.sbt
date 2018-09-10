@@ -1,13 +1,13 @@
 lazy val root = (project in file("."))
   .settings(
-    sbtPlugin     := true,
-    organization  := "org.jetbrains",
-    name          := "sbt-idea-compiler-indices",
-    scalaVersion  := "2.12.6",
-    version       := "0.1.0",
-    description   := "sbt plugin for writing IntelliJ bytecode indices",
-    scalacOptions := Seq(
-      "-Ypartial-unification",
+    crossSbtVersions  := Seq("0.13.17", "1.2.1"),
+    publishMavenStyle := false,
+    organization      := "org.jetbrains",
+    name              := "sbt-idea-compiler-indices",
+    scalaVersion      := "2.12.6",
+    version           := "0.1.0",
+    description       := "sbt plugin for writing IntelliJ bytecode indices",
+    scalacOptions     := Seq(
       "-encoding",
       "UTF-8",
       "-feature",
@@ -19,10 +19,8 @@ lazy val root = (project in file("."))
       "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
-      "-Ywarn-unused-import",
       "-Xfuture",
-      "-Ybreak-cycles",
       "-Xexperimental"
     ),
     libraryDependencies += "org.jetbrains" %% "scala-compiler-indices-protocol" % "0.1.0"
-  )
+  ).enablePlugins(SbtPlugin)
