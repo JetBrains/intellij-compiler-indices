@@ -9,11 +9,17 @@ object SbtCompilationBackCompat {
   type CompileAnalysis  = sbt.inc.Analysis
   type PreviousResult   = sbt.Compiler.PreviousAnalysis
   type ClassFileManager = sbt.inc.ClassfileManager
+  type IncOptions       = sbt.inc.IncOptions
 
   val Analysis = sbt.inc.Analysis
 
-  implicit class CompileResultExt(val result: PreviousResult) {
+  implicit class CompileResultExt(val result: PreviousResult) extends AnyVal {
     def getAnalysis: Optional[CompileAnalysis] = Optional.of(result.analysis)
+  }
+
+  implicit class IncOptionsExt(val options: IncOptions) extends AnyVal {
+    def withClassfileManager(manager: ClassFileManager): IncOptions =
+      options.withNewClassfileManager(() => manager)
   }
 
   object PreviousResult {

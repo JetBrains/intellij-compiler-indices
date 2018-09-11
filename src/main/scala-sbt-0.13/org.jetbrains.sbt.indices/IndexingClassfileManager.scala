@@ -7,16 +7,40 @@ import java.util.concurrent.ConcurrentHashMap
 import org.jetbrains.sbt.indices.IntellijIndexer.ClassesInfo
 import org.jetbrains.sbt.indices.SbtCompilationBackCompat._
 
-private object IndexingClassfileManager extends ClassFileManager {
-  val classesInfo: util.Set[ClassesInfo] = ConcurrentHashMap.newKeySet[ClassesInfo]
+private class IndexingClassfileManager(inherited: ClassFileManager) extends ClassFileManager {
+  import IndexingClassfileManager._
 
-  private[this] val generatedStaging = new ThreadLocal[Array[File]]
-  private[this] val deletedStaging   = new ThreadLocal[Array[File]]
+  override def delete(classes: Iterable[File]): Unit = {
+    deletedStaging.set(classes.toArray)
+    inherited.delete(classes)
+  }
 
-  override def delete(classes:    Iterable[File]): Unit = deletedStaging.set(classes.toArray)
-  override def generated(classes: Iterable[File]): Unit = generatedStaging.set(classes.toArray)
+  override def generated(classes: Iterable[File]): Unit = {
+    generatedStaging.set(classes.toArray)
+    inherited.generated(classes)
+  }
 
-  override def complete(success: Boolean): Unit =
+  override def complete(success: Boolean): Unit = {
     if (success) classesInfo.add(ClassesInfo(generatedStaging.get, deletedStaging.get))
     else         { generatedStaging.remove(); deletedStaging.remove() }
+
+    inherited.complete(success)
+  }
+}
+
+object IndexingClassfileManager {
+  val classesInfo: util.Set[ClassesInfo] = ConcurrentHashMap.newKeySet[ClassesInfo]
+
+  val generatedStaging = new ThreadLocal[Array[File]] {
+    override def initialValue(): Array[File] = Array.empty
+  }
+
+  val deletedStaging   = new ThreadLocal[Array[File]] {
+    override def initialValue(): Array[File] = Array.empty
+  }
+
+  def apply(options: IncOptions): ClassFileManager = {
+    val classFileManager = options.newClassfileManager
+    new IndexingClassfileManager(classFileManager())
+  }
 }

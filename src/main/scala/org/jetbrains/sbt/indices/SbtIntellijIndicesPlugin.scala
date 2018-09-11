@@ -30,8 +30,8 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   import autoImport._
 
   private[this] def perConfig: Seq[Def.Setting[_]] = Seq(
-    cleanKeepFiles     += target(lockFile).value,
     incrementalityType := IncrementalityType.Incremental,
+    incOptions         ~= { opt => opt.withClassfileManager(IndexingClassfileManager(opt)) },
     manipulateBytecode := Def.taskDyn {
       val previousValue = manipulateBytecode.taskValue
       val compilationId = UUID.randomUUID()
@@ -40,10 +40,10 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
       val project       = thisProject.value.id
       val buildBaseDir  = (baseDirectory in ThisBuild).value
       val port          = ideaPort.value
-      val targetDir     = target.value
+      val infoDir       = compilationInfoDir(buildBaseDir.getPath, thisProject.value.id)
       val log           = streams.value.log
 
-      targetDir.withLockInDir(log = log.info(_)) {
+      infoDir.withLockInDir(log = log.info(_)) {
         val socket        = notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
 
         val previousResult = itype match {
@@ -72,7 +72,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
               project,
               version,
               itype,
-              targetDir / compilationInfoDirName,
+              infoDir,
               compilationStartTimestamp,
               compilationId
             )
@@ -91,7 +91,13 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
-    inConfig(Compile)(perConfig) ++ inConfig(Test)(perConfig)
+    inConfig(Compile)(perConfig) ++ inConfig(Test)(perConfig) ++ Seq(
+      cleanFiles += {
+        val basePath = (baseDirectory in ThisBuild).value.getPath
+        compilationInfoDir(basePath, thisProject.value.id)
+      }
+    )
+
 
   override def globalSettings: Seq[Def.Setting[_]] = Seq(ideaPort := 65337)
 }
@@ -99,19 +105,26 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
 object IntellijIndexer {
   final case class ClassesInfo(generated: Array[File], deleted: Array[File])
 
+  object ClassesInfo {
+    def empty: ClassesInfo = ClassesInfo(Array.empty[File], Array.empty[File])
+  }
+
+  def compilationInfoDir(base: String, projectId: String): File =
+    projectCompilationInfoDir(base, projectId).toFile
+
   def findCorrespondingClassesInfo(
     currentRelations: Relations,
     prevRelations:    Relations
-  ): Option[ClassesInfo] = {
+  ): ClassesInfo = {
     val result = IndexingClassfileManager.classesInfo.asScala.find { info =>
-      lazy val isInCurrent = info.generated.headOption.exists(currentRelations.allProducts.contains)
-      lazy val isInPrev    = info.deleted.headOption.exists(prevRelations.allProducts.contains)
+      def isInCurrent = info.generated.headOption.exists(currentRelations.allProducts.contains)
+      def isInPrev    = info.deleted.headOption.exists(prevRelations.allProducts.contains)
 
       isInCurrent || isInPrev
     }
 
     result.foreach(IndexingClassfileManager.classesInfo.remove)
-    result
+    result.getOrElse(ClassesInfo.empty)
   }
 
   def dumpCompilationInfo(
@@ -124,17 +137,16 @@ object IntellijIndexer {
     timestamp:          Long,
     compilationId:      UUID
   ): File = {
-    val analysis     = canalysis.asInstanceOf[Analysis]
-    val prevAnalysis = prev.getAnalysis.orElse(Analysis.Empty).asInstanceOf[Analysis]
+    val analysis      = canalysis.asInstanceOf[Analysis]
+    val prevAnalysis  = prev.getAnalysis.orElse(Analysis.Empty).asInstanceOf[Analysis]
 
     val prevRelations = prevAnalysis.relations
     val relations     = analysis.relations
 
-    val classesInfo =
-      findCorrespondingClassesInfo(relations, prevRelations)
-        .getOrElse(throw new RuntimeException("Failed to find modified classes info in ClassfileManager."))
-
-    val isIncremental  = incrementalityType == IncrementalityType.Incremental
+    val classesInfo   = findCorrespondingClassesInfo(relations, prevRelations)
+    val isIncremental =
+      incrementalityType == IncrementalityType.Incremental ||      // for builds forced from inside the IDEA
+        classesInfo.generated.length == relations.allProducts.size // for regular clean builds
 
     val generatedClasses: Set[CompiledClass] = {
       val classes =
@@ -164,8 +176,7 @@ object IntellijIndexer {
     )
 
     val compilationInfoFile = compilationInfoDir / s"$compilationInfoFilePrefix-${compilationId.toString}"
-
-    compilationInfoFile.mkdirs()
+    compilationInfoDir.mkdirs()
     val out = new PrintWriter(new BufferedWriter(new FileWriter(compilationInfoFile)))
     out.print(compilationInfo.toJson.compactPrint)
     out.close()
