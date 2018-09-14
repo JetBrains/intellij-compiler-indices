@@ -2,6 +2,7 @@ package org.jetbrains.sbt.indices
 
 import java.io._
 import java.net.Socket
+import java.nio.file.Files
 import java.util.UUID
 
 import org.jetbrains.plugins.scala.indices.protocol.CompiledClass
@@ -30,61 +31,64 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   import autoImport._
 
   private[this] def perConfig: Seq[Def.Setting[_]] = Seq(
-    incrementalityType := IncrementalityType.Incremental,
     incOptions         ~= { opt => opt.withClassfileManager(IndexingClassfileManager(opt)) },
     manipulateBytecode := Def.taskDyn {
       val previousValue = manipulateBytecode.taskValue
-      val compilationId = UUID.randomUUID()
-      val version       = scalaVersion.value
-      val itype         = incrementalityType.value
-      val project       = thisProject.value.id
       val buildBaseDir  = (baseDirectory in ThisBuild).value
-      val port          = ideaPort.value
-      val infoDir       = compilationInfoDir(buildBaseDir.getPath, thisProject.value.id)
       val log           = streams.value.log
 
-      infoDir.withLockInDir(log = log.info(_)) {
-        val socket        = notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
+      if (!isIdeaProject(buildBaseDir)) Def.task(previousValue.value)
+      else {
+        val infoDir       = compilationInfoDir(buildBaseDir, thisProject.value.id)
+        val compilationId = UUID.randomUUID()
+        val itype         = incrementalityType.value
+        val version       = scalaBinaryVersion.value
+        val project       = thisProject.value.id
+        val port          = ideaPort.value
 
-        val previousResult = itype match {
-          case IncrementalityType.Incremental    => previousCompile.value
-          case IncrementalityType.NonIncremental => PreviousResult.empty()
-        }
+        infoDir.withLockInDir(log = log.info(_)) {
+          val socket = notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
 
-        val compilationStartTimestamp = System.currentTimeMillis()
-        Def.task {
-          val oldTaskValue: CompileResult = previousValue.result.value match {
-            case Inc(inc) =>
-              socket.foreach { s =>
-                val result = CompilationResult(successful = false, compilationStartTimestamp, compilationId, None)
-                notifyFinish(s, result)
-                s.close()
-              }
-              throw inc
-            case Value(v) => v
+          val previousResult = itype match {
+            case IncrementalityType.Incremental    => previousCompile.value
+            case IncrementalityType.NonIncremental => PreviousResult.empty()
           }
 
-          try {
-            //@TODO: what if info dumping fails while IDEA is not listening for connections
-            val compilationInfoFile = dumpCompilationInfo(
-              oldTaskValue.analysis,
-              previousResult,
-              project,
-              version,
-              itype,
-              infoDir,
-              compilationStartTimestamp,
-              compilationId
-            )
-            val result = CompilationResult(
-              successful = true,
-              compilationStartTimestamp,
-              compilationId,
-              Option(compilationInfoFile)
-            )
-            socket.foreach(notifyFinish(_, result))
-            oldTaskValue
-          } finally socket.foreach(_.close())
+          val compilationStartTimestamp = System.currentTimeMillis()
+          Def.task {
+            val oldTaskValue: CompileResult = previousValue.result.value match {
+              case Inc(inc) =>
+                socket.foreach { s =>
+                  val result = CompilationResult(successful = false, compilationStartTimestamp, compilationId, None)
+                  notifyFinish(s, result)
+                  s.close()
+                }
+                throw inc
+              case Value(v) => v
+            }
+
+            try {
+              //@TODO: what if info dumping fails while IDEA is not listening for connections
+              val compilationInfoFile = dumpCompilationInfo(
+                oldTaskValue.analysis,
+                previousResult,
+                project,
+                version,
+                itype,
+                infoDir,
+                compilationStartTimestamp,
+                compilationId
+              )
+              val result = CompilationResult(
+                successful = true,
+                compilationStartTimestamp,
+                compilationId,
+                Option(compilationInfoFile)
+              )
+              socket.foreach(notifyFinish(_, result))
+              oldTaskValue
+            } finally socket.foreach(_.close())
+          }
         }
       }
     }.value
@@ -93,13 +97,16 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   override def projectSettings: Seq[Def.Setting[_]] =
     inConfig(Compile)(perConfig) ++ inConfig(Test)(perConfig) ++ Seq(
       cleanFiles += {
-        val basePath = (baseDirectory in ThisBuild).value.getPath
-        compilationInfoDir(basePath, thisProject.value.id)
+        val base = (baseDirectory in ThisBuild).value
+        compilationInfoDir(base, thisProject.value.id)
       }
     )
 
 
-  override def globalSettings: Seq[Def.Setting[_]] = Seq(ideaPort := 65337)
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(
+    ideaPort           := 65337,
+    incrementalityType := IncrementalityType.Incremental
+  )
 }
 
 object IntellijIndexer {
@@ -109,8 +116,10 @@ object IntellijIndexer {
     def empty: ClassesInfo = ClassesInfo(Array.empty[File], Array.empty[File])
   }
 
-  def compilationInfoDir(base: String, projectId: String): File =
+  def compilationInfoDir(base: File, projectId: String): File =
     projectCompilationInfoDir(base, projectId).toFile
+
+  def isIdeaProject(base: File): Boolean = Files.isDirectory(base.toPath.resolve(".idea"))
 
   def findCorrespondingClassesInfo(
     currentRelations: Relations,
@@ -146,7 +155,7 @@ object IntellijIndexer {
     val classesInfo   = findCorrespondingClassesInfo(relations, prevRelations)
     val isIncremental =
       incrementalityType == IncrementalityType.Incremental ||      // for builds forced from inside the IDEA
-        classesInfo.generated.length == relations.allProducts.size // for regular clean builds
+        classesInfo.generated.length != relations.allProducts.size // for regular clean builds
 
     val generatedClasses: Set[CompiledClass] = {
       val classes =
