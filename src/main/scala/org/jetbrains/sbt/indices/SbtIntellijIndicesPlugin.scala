@@ -25,44 +25,48 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   override def requires: Plugins      = CorePlugin && JvmPlugin
 
   object autoImport {
-    lazy val incrementalityType = settingKey[IncrementalityType]("Internal use: Configures index incrementality type")
-    lazy val ideaPort           = settingKey[Int]("Port to talk to IDEA indexer")
+    lazy val incrementalityType =
+      settingKey[IncrementalityType]("Internal use only: Configures index incrementality type")
+    lazy val ideaPort = settingKey[Int]("Port to talk to IDEA indexer")
   }
   import autoImport._
 
   private[this] def perConfig: Seq[Def.Setting[_]] = Seq(
-    incOptions         ~= { opt => opt.withClassfileManager(IndexingClassfileManager(opt)) },
-    manipulateBytecode := Def.taskDyn {
-      val previousValue = manipulateBytecode.taskValue
-      val buildBaseDir  = (baseDirectory in ThisBuild).value
+    incOptions ~= { opt => opt.withClassfileManager(IndexingClassfileManager(opt))
+    },
+    compile := Def.taskDyn {
+      val previousValue = compile.taskValue
       val log           = streams.value.log
+      val buildBaseDir  = (baseDirectory in ThisBuild).value
 
       if (!isIdeaProject(buildBaseDir)) Def.task(previousValue.value)
       else {
-        val infoDir       = compilationInfoDir(buildBaseDir, thisProject.value.id)
+        val projectId     = thisProject.value.id
         val compilationId = UUID.randomUUID()
         val itype         = incrementalityType.value
         val version       = scalaBinaryVersion.value
-        val project       = thisProject.value.id
+        val infoDir       = compilationInfoDir(buildBaseDir, projectId)
         val port          = ideaPort.value
 
-        infoDir.withLockInDir(log = log.info(_)) {
-          val socket = notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
+        infoDir.lock(log = log.info(_))
+        val socket                    = notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
+        val compilationStartTimestamp = System.currentTimeMillis()
 
+        Def.taskDyn {
           val previousResult = itype match {
             case IncrementalityType.Incremental    => previousCompile.value
             case IncrementalityType.NonIncremental => PreviousResult.empty()
           }
 
-          val compilationStartTimestamp = System.currentTimeMillis()
           Def.task {
-            val oldTaskValue: CompileResult = previousValue.result.value match {
+            val oldTaskValue = previousValue.result.value match {
               case Inc(inc) =>
                 socket.foreach { s =>
-                  val result = CompilationResult(successful = false, compilationStartTimestamp, compilationId, None)
+                  val result = CompilationResult(successful = false, compilationStartTimestamp, None)
                   notifyFinish(s, result)
                   s.close()
                 }
+                infoDir.unlock(log = log.info(_))
                 throw inc
               case Value(v) => v
             }
@@ -70,9 +74,9 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
             try {
               //@TODO: what if info dumping fails while IDEA is not listening for connections
               val compilationInfoFile = dumpCompilationInfo(
-                oldTaskValue.analysis,
+                oldTaskValue,
                 previousResult,
-                project,
+                projectId,
                 version,
                 itype,
                 infoDir,
@@ -82,12 +86,14 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
               val result = CompilationResult(
                 successful = true,
                 compilationStartTimestamp,
-                compilationId,
                 Option(compilationInfoFile)
               )
               socket.foreach(notifyFinish(_, result))
               oldTaskValue
-            } finally socket.foreach(_.close())
+            } finally {
+              socket.foreach(_.close())
+              infoDir.unlock(log = log.info(_))
+            }
           }
         }
       }
@@ -101,7 +107,6 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
         compilationInfoDir(base, thisProject.value.id)
       }
     )
-
 
   override def globalSettings: Seq[Def.Setting[_]] = Seq(
     ideaPort           := 65337,
@@ -139,22 +144,22 @@ object IntellijIndexer {
   def dumpCompilationInfo(
     canalysis:          CompileAnalysis,
     prev:               PreviousResult,
-    project:            String,
+    projectId:          String,
     scalaVersion:       String,
     incrementalityType: IncrementalityType,
     compilationInfoDir: File,
     timestamp:          Long,
     compilationId:      UUID
   ): File = {
-    val analysis      = canalysis.asInstanceOf[Analysis]
-    val prevAnalysis  = prev.getAnalysis.orElse(Analysis.Empty).asInstanceOf[Analysis]
+    val analysis     = canalysis.asInstanceOf[Analysis]
+    val prevAnalysis = prev.getAnalysis.orElse(Analysis.Empty).asInstanceOf[Analysis]
 
     val prevRelations = prevAnalysis.relations
     val relations     = analysis.relations
 
     val classesInfo   = findCorrespondingClassesInfo(relations, prevRelations)
     val isIncremental =
-      incrementalityType == IncrementalityType.Incremental ||      // for builds forced from inside the IDEA
+      incrementalityType != IncrementalityType.NonIncremental && // for builds forced from inside the IDEA
         classesInfo.generated.length != relations.allProducts.size // for regular clean builds
 
     val generatedClasses: Set[CompiledClass] = {
@@ -169,14 +174,12 @@ object IntellijIndexer {
 
     val deletedSources: Set[File] =
       if (isIncremental)
-        classesInfo
-          .deleted
+        classesInfo.deleted
           .map(prevRelations.produced(_).head)(collection.breakOut)
       else Set.empty
 
-
     val compilationInfo = SbtCompilationInfo(
-      project,
+      projectId,
       isIncremental,
       scalaVersion,
       deletedSources,

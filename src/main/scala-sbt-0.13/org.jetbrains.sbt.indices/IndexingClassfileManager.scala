@@ -22,8 +22,9 @@ private class IndexingClassfileManager(inherited: ClassFileManager) extends Clas
 
   override def complete(success: Boolean): Unit = {
     if (success) classesInfo.add(ClassesInfo(generatedStaging.get, deletedStaging.get))
-    else         { generatedStaging.remove(); deletedStaging.remove() }
 
+    generatedStaging.remove()
+    deletedStaging.remove()
     inherited.complete(success)
   }
 }

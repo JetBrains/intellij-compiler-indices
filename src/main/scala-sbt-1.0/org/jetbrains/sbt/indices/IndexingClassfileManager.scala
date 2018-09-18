@@ -21,9 +21,12 @@ object IndexingClassfileManager extends ClassFileManager {
   override def delete(classes:    Array[File]): Unit = deletedStaging.set(classes)
   override def generated(classes: Array[File]): Unit = generatedStaging.set(classes)
 
-  override def complete(success: Boolean): Unit =
+  override def complete(success: Boolean): Unit = {
     if (success) classesInfo.add(ClassesInfo(generatedStaging.get, deletedStaging.get))
-    else         { generatedStaging.remove(); deletedStaging.remove() }
+
+    generatedStaging.remove()
+    deletedStaging.remove()
+  }
 
   def apply(unused: IncOptions): ClassFileManager = IndexingClassfileManager
 }
