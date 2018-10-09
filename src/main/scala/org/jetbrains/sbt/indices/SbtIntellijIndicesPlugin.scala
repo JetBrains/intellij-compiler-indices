@@ -3,6 +3,7 @@ package org.jetbrains.sbt.indices
 import java.util.UUID
 
 import org.jetbrains.plugins.scala.indices.protocol.sbt.Locking._
+import org.jetbrains.plugins.scala.indices.protocol.sbt.compilationInfoBaseDir
 import org.jetbrains.sbt.indices.SbtCompilationBackCompat._
 import sbt.Keys._
 import sbt.plugins.{CorePlugin, JvmPlugin}
@@ -24,7 +25,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
     incOptions ~= { opt => opt.withClassfileManager(IndexingClassfileManager(opt)) },
     compile    := Def.taskDyn {
       val previousValue = compile.taskValue
-      val buildBaseDir  = (baseDirectory in ThisBuild).value
+      val buildBaseDir  = (ThisBuild / baseDirectory).value
 
       if (!isIdeaProject(buildBaseDir)) Def.task(previousValue.value)
       else {
@@ -53,7 +54,6 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
           Def.task {
             val oldTaskValue = previousValue.value
 
-            //@TODO: what if info dumping fails while IDEA is not listening for connections
             val compilationInfoFile = dumpCompilationInfo(
               oldTaskValue,
               previousResult,
@@ -85,8 +85,8 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   override def projectSettings: Seq[Def.Setting[_]] =
     inConfig(Compile)(perConfig) ++ inConfig(Test)(perConfig) ++ Seq(
       cleanFiles += {
-        val base = (baseDirectory in ThisBuild).value
-        compilationInfoDir(base, thisProject.value.id)
+        val base = (ThisBuild / baseDirectory).value
+        compilationInfoBaseDir(base).toFile
       }
     )
 

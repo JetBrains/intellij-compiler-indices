@@ -22,5 +22,11 @@ lazy val root = (project in file("."))
       "-Xfuture",
       "-Xexperimental"
     ),
-    libraryDependencies += "org.jetbrains" %% "scala-compiler-indices-protocol" % "0.1.0"
-  ).enablePlugins(SbtPlugin)
+    libraryDependencies += "org.jetbrains" %% "scala-compiler-indices-protocol" % "0.1.0",
+
+  )
+  .enablePlugins(SbtPlugin)
+  .settings(
+    scriptedLaunchOpts ++= Seq("-Xmx1024M", "-Dplugin.version=" + version.value),
+    scriptedBufferLog := false
+  )

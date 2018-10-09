@@ -1,0 +1,32 @@
+Compile/check
+Compile/check 1
+Compile/check/1
+Compile/check  1
+Compile/check "1"
+Compile / check "1"
+Compile / check 1
+check
+check 1
+Compile/check -- 1
+Compile/check '1'
+Compile/check
+Compile/check 1
+Compile/check "1"
+reload
+Compile/check 1
+inspect Compile/check
+reload
+check 1
+check 11 11 11
+check <1>
+greeting "lol"
+greeting 1 2 3 4
+reload
+Compile/check 1
+reloasd
+reload
+Compile/check 1
+reload
+Compile/check 1
+reload
+Compile/check 1

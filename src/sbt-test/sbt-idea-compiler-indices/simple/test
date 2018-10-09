@@ -1,0 +1,10 @@
+> compile
+> Compile/check 1
+> Test/compile
+> Test/check 1
+> Test/compile
+> Compile/check 3
+> Test/check 2
+$ copy-file changes/failed.scala src/main/scala/failed.scala
+- > compile
+> Compile/check 3

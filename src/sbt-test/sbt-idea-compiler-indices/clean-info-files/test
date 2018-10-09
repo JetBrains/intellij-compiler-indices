@@ -1,0 +1,4 @@
+> compile
+$ exists .idea/.sbt-compilation-infos/root-compile
+> clean
+$ absent .idea/.sbt-compilation-infos
