@@ -1,6 +1,11 @@
 lazy val root = (project in file("."))
   .settings(
-    crossSbtVersions  := Seq("1.2.1", "0.13.17"),
+    bintrayOrganization := Some("jetbrains"),
+    bintrayRepository   := "sbt-plugins",
+    bintrayVcsUrl       := Option("https://github.com/JetBrains/sbt-idea-compiler-indices")
+  )
+  .settings(
+    crossSbtVersions  := Seq("1.2.6", "0.13.17"),
     publishMavenStyle := false,
     organization      := "org.jetbrains",
     name              := "sbt-idea-compiler-indices",
