@@ -9,7 +9,7 @@ import sbt.Keys._
 import sbt.plugins.{CorePlugin, JvmPlugin}
 import sbt.{AutoPlugin, Def, _}
 
-object SbtIntellijIndicesPlugin extends AutoPlugin {
+object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
   import org.jetbrains.sbt.indices.IntellijIndexer._
 
   override def trigger: PluginTrigger = allRequirements
@@ -18,6 +18,28 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   object autoImport {
     lazy val incrementalityType = settingKey[IncrementalityType]("internal use only: Configures index incrementality type")
     lazy val ideaPort           = settingKey[Int]("Port to talk to IDEA indexer")
+
+    // experimental
+    lazy val rebuildIndices = Command.command("rebuildIdeaIndices") { state =>
+      val patchedState = Command.process(
+        """set incrementalityType in Global := _root_.org.jetbrains.sbt.indices.IntellijIndexer.IncrementalityType.Incremental""",
+        state
+      )
+
+      val ext = Project.extract(patchedState)
+
+      val relevantProjects = ext.structure.allProjects.filter(
+        _.autoPlugins.exists(_.label == self.getClass.getName.stripSuffix("$"))
+      )
+
+      val buildCommand = relevantProjects.map { project =>
+        val id = project.id
+        s"$id/compile $id/test:compile"
+      }.mkString("all ", " ", "")
+
+      Command.process(buildCommand, patchedState)
+      state
+    }
   }
   import autoImport._
 
@@ -25,7 +47,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
     incOptions ~= { opt => opt.withClassfileManager(IndexingClassfileManager(opt)) },
     compile    := Def.taskDyn {
       val previousValue = compile.taskValue
-      val buildBaseDir  = (ThisBuild / baseDirectory).value
+      val buildBaseDir  = (baseDirectory in ThisBuild).value
 
       if (!isIdeaProject(buildBaseDir)) Def.task(previousValue.value)
       else {
@@ -75,8 +97,8 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
             oldTaskValue
           }
         }.andFinally {
-          socket.foreach(_.close())
-          infoDir.unlock(log = log.info(_))
+          try     infoDir.unlock(log = log.info(_))
+          finally socket.foreach(_.close())
         }
       }
     }.value
@@ -85,9 +107,10 @@ object SbtIntellijIndicesPlugin extends AutoPlugin {
   override def projectSettings: Seq[Def.Setting[_]] =
     inConfig(Compile)(perConfig) ++ inConfig(Test)(perConfig) ++ Seq(
       cleanFiles += {
-        val base = (ThisBuild / baseDirectory).value
+        val base = (baseDirectory in ThisBuild).value
         compilationInfoBaseDir(base).toFile
-      }
+      },
+      commands += rebuildIndices
     )
 
   override def globalSettings: Seq[Def.Setting[_]] = Seq(
