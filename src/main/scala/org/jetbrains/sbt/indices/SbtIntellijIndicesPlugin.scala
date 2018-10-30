@@ -22,7 +22,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
     // experimental
     lazy val rebuildIndices = Command.command("rebuildIdeaIndices") { state =>
       val patchedState = Command.process(
-        """set incrementalityType in Global := _root_.org.jetbrains.sbt.indices.IntellijIndexer.IncrementalityType.Incremental""",
+        """set incrementalityType in Global := _root_.org.jetbrains.sbt.indices.IntellijIndexer.IncrementalityType.NonIncremental""",
         state
       )
 
@@ -32,11 +32,10 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
         _.autoPlugins.exists(_.label == self.getClass.getName.stripSuffix("$"))
       )
 
-      val buildCommand = relevantProjects.map { project =>
-        val id = project.id
-        s"$id/compile $id/test:compile"
-      }.mkString("all ", " ", "")
+      val projectIds   = relevantProjects.map(_.id)
+      val buildCommand = projectIds.map(id => s"$id/compile $id/test:compile").mkString("all ", " ", "")
 
+      state.log.info(s"Rebuilding IDEA indices in ${projectIds.mkString(", ")}.")
       Command.process(buildCommand, patchedState)
       state
     }
@@ -60,12 +59,12 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
         val infoDir         = compilationInfoDir(buildBaseDir, s"$projectId-$configurationId")
         val port            = ideaPort.value
 
-        infoDir.lock(log = log.info(_))
+        infoDir.lock(log = log.debug(_))
         val compilationStartTimestamp = System.currentTimeMillis()
 
         val socket =
           try   notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
-          catch { case e: Throwable => infoDir.unlock(log = log.info(_)); throw e }
+          catch { case e: Throwable => infoDir.unlock(log = log.debug(_)); throw e }
 
         Def.taskDyn {
           val previousResult = itype match {
@@ -75,8 +74,10 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
 
           Def.task {
             val oldTaskValue = previousValue.value
+            val isOffline    = socket.isEmpty
 
             val compilationInfoFile = dumpCompilationInfo(
+              isOffline,
               oldTaskValue,
               previousResult,
               projectId,
@@ -97,7 +98,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
             oldTaskValue
           }
         }.andFinally {
-          try     infoDir.unlock(log = log.info(_))
+          try     infoDir.unlock(log = log.debug(_))
           finally socket.foreach(_.close())
         }
       }

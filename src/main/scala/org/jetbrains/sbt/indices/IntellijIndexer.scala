@@ -44,6 +44,7 @@ object IntellijIndexer {
   }
 
   def dumpCompilationInfo(
+    isOffline:          Boolean,
     canalysis:          CompileAnalysis,
     prev:               PreviousResult,
     projectId:          String,
@@ -92,8 +93,9 @@ object IntellijIndexer {
     val compilationInfoFile = compilationInfoDir / s"$compilationInfoFilePrefix-${compilationId.toString}"
     compilationInfoDir.mkdirs()
     val out = Files.newBufferedWriter(compilationInfoFile.toPath, StandardCharsets.UTF_8)
-    out.write(compilationInfo.toJson.compactPrint)
-    out.close()
+
+    try     out.write(compilationInfo.toJson.compactPrint)
+    finally out.close()
 
     compilationInfoFile
   }
