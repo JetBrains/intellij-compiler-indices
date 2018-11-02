@@ -4,6 +4,7 @@ import java.util.UUID
 
 import org.jetbrains.plugins.scala.indices.protocol.sbt.Locking._
 import org.jetbrains.plugins.scala.indices.protocol.sbt.compilationInfoBaseDir
+import org.jetbrains.plugins.scala.indices.protocol.sbt.{Configuration => PConfiguration}
 import org.jetbrains.sbt.indices.SbtCompilationBackCompat._
 import sbt.Keys._
 import sbt.plugins.{CorePlugin, JvmPlugin}
@@ -76,6 +77,15 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
             val oldTaskValue = previousValue.value
             val isOffline    = socket.isEmpty
 
+            val pconfig = configurationId match {
+              case Compile => PConfiguration.Compile
+              case Test    => PConfiguration.Test
+              case conf =>
+                sys.error(
+                  s"Unsupported configuration $conf. Only Compile and Test configuration are supported by idea-compiler-indices."
+                )
+            }
+
             val compilationInfoFile = dumpCompilationInfo(
               isOffline,
               oldTaskValue,
@@ -84,6 +94,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
               version,
               itype,
               infoDir,
+              pconfig,
               compilationStartTimestamp,
               compilationId
             )
@@ -91,7 +102,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
             val result = CompilationResult(
               successful = true,
               compilationStartTimestamp,
-              Option(compilationInfoFile)
+              compilationInfoFile
             )
 
             socket.foreach(notifyFinish(_, result))

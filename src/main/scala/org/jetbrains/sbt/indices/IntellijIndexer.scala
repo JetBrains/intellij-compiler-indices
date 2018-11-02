@@ -8,7 +8,7 @@ import java.util.UUID
 
 import org.jetbrains.plugins.scala.indices.protocol.CompiledClass
 import org.jetbrains.plugins.scala.indices.protocol.IdeaIndicesJsonProtocol._
-import org.jetbrains.plugins.scala.indices.protocol.sbt._
+import org.jetbrains.plugins.scala.indices.protocol.sbt.{Configuration => PConfiguration, _}
 import org.jetbrains.sbt.indices.SbtCompilationBackCompat._
 import sbt._
 import spray.json._
@@ -51,16 +51,18 @@ object IntellijIndexer {
     scalaVersion:       String,
     incrementalityType: IncrementalityType,
     compilationInfoDir: File,
+    configuration:      PConfiguration,
     timestamp:          Long,
     compilationId:      UUID
-  ): File = {
-    val analysis = canalysis.asInstanceOf[Analysis]
+  ): Option[File] = {
+    val analysis     = canalysis.asInstanceOf[Analysis]
     val prevAnalysis = prev.getAnalysis.orElse(Analysis.Empty).asInstanceOf[Analysis]
 
     val prevRelations = prevAnalysis.relations
-    val relations = analysis.relations
+    val relations     = analysis.relations
 
     val classesInfo = findCorrespondingClassesInfo(relations, prevRelations)
+
     val isIncremental =
       incrementalityType != IncrementalityType.NonIncremental && // for builds forced from inside the IDEA
         classesInfo.generated.length != relations.allProducts.size // for regular clean builds
@@ -85,19 +87,23 @@ object IntellijIndexer {
       projectId,
       isIncremental,
       scalaVersion,
+      configuration,
       deletedSources,
       generatedClasses,
       timestamp
     )
 
-    val compilationInfoFile = compilationInfoDir / s"$compilationInfoFilePrefix-${compilationId.toString}"
-    compilationInfoDir.mkdirs()
-    val out = Files.newBufferedWriter(compilationInfoFile.toPath, StandardCharsets.UTF_8)
+    if (compilationInfo.isEmpty && isOffline) None
+    else {
+      val compilationInfoFile = compilationInfoDir / s"$compilationInfoFilePrefix-${compilationId.toString}"
+      compilationInfoDir.mkdirs()
+      val out = Files.newBufferedWriter(compilationInfoFile.toPath, StandardCharsets.UTF_8)
 
-    try     out.write(compilationInfo.toJson.compactPrint)
-    finally out.close()
+      try     out.write(compilationInfo.toJson.compactPrint)
+      finally out.close()
 
-    compilationInfoFile
+      Option(compilationInfoFile)
+    }
   }
 
   def notifyIdeaStart(port: Int, projectBase: String, compilationId: UUID): Option[Socket] = {
