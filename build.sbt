@@ -27,7 +27,7 @@ lazy val root = (project in file("."))
       "-Xfuture",
       "-Xexperimental"
     ),
-    libraryDependencies += "org.jetbrains" %% "scala-compiler-indices-protocol" % "0.1.0",
+    libraryDependencies += "io.github.sugakandrey" %% "scala-compiler-indices-protocol" % "0.1.0",
 
   )
   .enablePlugins(SbtPlugin)
