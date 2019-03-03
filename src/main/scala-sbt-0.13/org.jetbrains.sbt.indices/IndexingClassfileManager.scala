@@ -40,8 +40,6 @@ object IndexingClassfileManager {
     override def initialValue(): Array[File] = Array.empty
   }
 
-  def apply(options: IncOptions): ClassFileManager = {
-    val classFileManager = options.newClassfileManager
-    new IndexingClassfileManager(classFileManager())
-  }
+  def apply(inherited: ClassFileManager): ClassFileManager =
+    new IndexingClassfileManager(inherited)
 }

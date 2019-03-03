@@ -27,6 +27,4 @@ object IndexingClassfileManager extends ClassFileManager {
     generatedStaging.remove()
     deletedStaging.remove()
   }
-
-  def apply(unused: IncOptions): ClassFileManager = IndexingClassfileManager
 }

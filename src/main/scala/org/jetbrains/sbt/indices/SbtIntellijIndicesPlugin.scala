@@ -20,7 +20,6 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
     lazy val incrementalityType = settingKey[IncrementalityType]("internal use only: Configures index incrementality type")
     lazy val ideaPort           = settingKey[Int]("Port to talk to IDEA indexer")
 
-    // experimental
     lazy val rebuildIndices = Command.command("rebuildIdeaIndices") { state =>
       val patchedState = Command.process(
         """set incrementalityType in Global := _root_.org.jetbrains.sbt.indices.IntellijIndexer.IncrementalityType.NonIncremental""",
@@ -44,7 +43,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
   import autoImport._
 
   private[this] def perConfig: Seq[Def.Setting[_]] = Seq(
-    incOptions ~= { opt => opt.withClassfileManager(IndexingClassfileManager(opt)) },
+    incOptions ~= patchIncOptions,
     compile    := Def.taskDyn {
       val previousValue = compile.taskValue
       val buildBaseDir  = (baseDirectory in ThisBuild).value

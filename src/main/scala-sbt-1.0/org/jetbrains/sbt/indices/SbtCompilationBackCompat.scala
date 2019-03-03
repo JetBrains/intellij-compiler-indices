@@ -17,9 +17,9 @@ object SbtCompilationBackCompat {
     def getAnalysis: Optional[CompileAnalysis] = result.analysis()
   }
 
-  implicit class IncOptionsExt(val options: IncOptions) extends AnyVal {
-    def withClassfileManager(manager: ClassFileManager): IncOptions =
-      options.withExternalHooks(options.externalHooks().withExternalClassFileManager(manager))
+  def patchIncOptions(options: IncOptions): IncOptions = {
+    val newExternalHooks = options.externalHooks().withExternalClassFileManager(IndexingClassfileManager)
+    options.withExternalHooks(newExternalHooks)
   }
 
   object PreviousResult {

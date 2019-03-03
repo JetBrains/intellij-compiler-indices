@@ -34,7 +34,7 @@ object IntellijIndexer {
   ): ClassesInfo = {
     val result = IndexingClassfileManager.classesInfo.asScala.find { info =>
       def isInCurrent = info.generated.headOption.exists(currentRelations.allProducts.contains)
-      def isInPrev = info.deleted.headOption.exists(prevRelations.allProducts.contains)
+      def isInPrev    = info.deleted.headOption.exists(prevRelations.allProducts.contains)
 
       isInCurrent || isInPrev
     }
@@ -70,7 +70,7 @@ object IntellijIndexer {
     val generatedClasses: Set[CompiledClass] = {
       val classes =
         if (isIncremental) classesInfo.generated.toSet
-        else relations.allProducts
+        else               relations.allProducts
 
       classes.map(
         f => CompiledClass(relations.produced(f).head, f)
