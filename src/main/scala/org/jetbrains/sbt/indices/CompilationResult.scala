@@ -6,6 +6,4 @@ final case class CompilationResult(
   successful:     Boolean,
   startTimestamp: Long,
   infoFile:       Option[File]
-) {
-  if (successful) require(infoFile.nonEmpty)
-}
+)
