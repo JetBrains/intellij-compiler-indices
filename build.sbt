@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
     bintrayVcsUrl       := Option("https://github.com/JetBrains/sbt-idea-compiler-indices")
   )
   .settings(
-    crossSbtVersions  := Seq("1.2.6", "0.13.17"),
+    crossSbtVersions  := Seq("1.2.8", "0.13.18"),
     publishMavenStyle := false,
     organization      := "org.jetbrains",
     name              := "sbt-idea-compiler-indices",
