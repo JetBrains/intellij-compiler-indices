@@ -1,6 +1,6 @@
 lazy val root = (project in file("."))
   .settings(
-    bintrayOrganization := Some("jetbrains"),
+    bintrayOrganization := Option("jetbrains"),
     bintrayRepository   := "sbt-plugins",
     bintrayVcsUrl       := Option("https://github.com/JetBrains/sbt-idea-compiler-indices")
   )
@@ -10,7 +10,7 @@ lazy val root = (project in file("."))
     organization      := "org.jetbrains",
     name              := "sbt-idea-compiler-indices",
     scalaVersion      := "2.12.6",
-    version           := "0.1.0",
+    version           := "0.1.1",
     description       := "sbt plugin for writing IntelliJ bytecode indices",
     scalacOptions     := Seq(
       "-encoding",
@@ -28,7 +28,6 @@ lazy val root = (project in file("."))
       "-Xexperimental"
     ),
     libraryDependencies += "io.github.sugakandrey" %% "scala-compiler-indices-protocol" % "0.1.0",
-
   )
   .enablePlugins(SbtPlugin)
   .settings(

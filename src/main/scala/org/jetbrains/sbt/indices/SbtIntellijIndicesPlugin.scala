@@ -107,6 +107,18 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
             socket.foreach(notifyFinish(_, result))
             oldTaskValue
           }
+        }.result.map {
+          case Inc(cause) =>
+            // compilation failed case
+            val failedRes = CompilationResult(
+              successful = false,
+              compilationStartTimestamp,
+              None
+            )
+
+            socket.foreach(notifyFinish(_, failedRes))
+            throw cause
+          case Value(canalysis) => canalysis
         }.andFinally {
           try     infoDir.unlock(log = log.debug(_))
           finally socket.foreach(_.close())
