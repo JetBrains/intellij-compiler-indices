@@ -7,7 +7,7 @@ lazy val settings: Seq[Def.Setting[_]] = Seq(
   check := {
     val compilationInfoCount = (Space ~> NatBasic).parsed
     val config               = configuration.value
-    val infoDirBase          = file(".idea") / ".sbt-compilation-infos" / s"root-$config"
+    val infoDirBase          = file("project") / "target" / ".sbt-compilation-infos" / s"root-$config"
 
     val condition = infoDirBase.exists() && {
       val infoFiles = infoDirBase.listFiles(_.getName.startsWith("compilation-info"))

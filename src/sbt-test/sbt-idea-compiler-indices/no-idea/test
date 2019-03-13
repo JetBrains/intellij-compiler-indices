@@ -1,2 +1,2 @@
 > compile
-$ absent .idea
+$ absent project/target/.sbt-compilation-infos

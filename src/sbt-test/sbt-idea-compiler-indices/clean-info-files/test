@@ -1,4 +1,4 @@
 > compile
-$ exists .idea/.sbt-compilation-infos/root-compile
+$ exists project/target/.sbt-compilation-infos/root-compile
 > clean
-$ absent .idea/.sbt-compilation-infos
+$ absent project/target/.sbt-compilation-infos
