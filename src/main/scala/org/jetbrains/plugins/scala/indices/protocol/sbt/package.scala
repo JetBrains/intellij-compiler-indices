@@ -9,7 +9,7 @@ package object sbt {
   def ideaACK: String                   = "ack"
 
   def compilationInfoBaseDir(thisBuildBase: File): Path =
-    thisBuildBase.toPath.resolve(".idea").resolve(compilationInfoDirName)
+    thisBuildBase.toPath.resolve(s"project/target/$compilationInfoDirName")
 
   def projectCompilationInfoDir(thisBuildBase: File, projectId: String): Path =
     compilationInfoBaseDir(thisBuildBase).resolve(projectId)
