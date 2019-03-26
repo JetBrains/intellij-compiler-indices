@@ -9,8 +9,8 @@ lazy val root = (project in file("."))
     publishMavenStyle := false,
     organization      := "org.jetbrains",
     name              := "sbt-idea-compiler-indices",
-    scalaVersion      := "2.12.6",
-    version           := "0.1.2",
+    scalaVersion      := "2.12.8",
+    version           := "0.1.3",
     description       := "sbt plugin for writing IntelliJ bytecode indices",
     scalacOptions     := Seq(
       "-encoding",

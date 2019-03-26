@@ -72,15 +72,17 @@ object IntellijIndexer {
         if (isIncremental) classesInfo.generated.toSet
         else               relations.allProducts
 
-      classes.map(
-        f => CompiledClass(relations.produced(f).head, f)
-      )(collection.breakOut)
+      classes.flatMap { clsFile =>
+        val source = relations.produced(clsFile).headOption
+        source.map(CompiledClass(_, clsFile))
+      }(collection.breakOut)
     }
 
     val deletedSources: Set[File] =
       if (isIncremental)
-        classesInfo.deleted
-          .map(prevRelations.produced(_).head)(collection.breakOut)
+        classesInfo
+          .deleted
+          .flatMap(prevRelations.produced(_).headOption)(collection.breakOut)
       else Set.empty
 
     val compilationInfo = SbtCompilationInfo(
