@@ -2,13 +2,13 @@ name := "scala-compiler-indices-protocol"
 
 organization := "io.github.sugakandrey"
 
-version := "0.1.1"
+version := "0.1.2"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.13.2"
 
-crossScalaVersions := Seq("2.12.6", "2.10.7")
+crossScalaVersions := Seq("2.10.7", "2.12.11", "2.13.2")
 
-libraryDependencies += "io.spray" %% "spray-json" % "1.3.4"
+libraryDependencies += "io.spray" %% "spray-json" % "1.3.5"
 
 homepage := Some(url("https://github.com/JetBrains/intellij-scala-indices-protocol"))
 
