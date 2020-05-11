@@ -26,11 +26,5 @@ developers := List(
   )
 )
 
-licenses                += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
+licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 publishArtifact in Test := false
-publishMavenStyle       := true
-
-publishTo := {
-  if (isSnapshot.value) Option(Opts.resolver.sonatypeSnapshots)
-  else Option(Opts.resolver.sonatypeStaging)
-}
