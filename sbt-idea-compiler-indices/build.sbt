@@ -5,12 +5,11 @@ lazy val root = (project in file("."))
     bintrayVcsUrl       := Option("https://github.com/JetBrains/sbt-idea-compiler-indices")
   )
   .settings(
-    crossSbtVersions  := Seq("1.2.8", "0.13.18"),
+    crossSbtVersions  := Seq("1.3.10", "0.13.18"),
+    sbtPlugin         := true,
     publishMavenStyle := false,
     organization      := "org.jetbrains",
     name              := "sbt-idea-compiler-indices",
-    scalaVersion      := "2.12.8",
-    version           := "0.1.3",
     description       := "sbt plugin for writing IntelliJ bytecode indices",
     scalacOptions     := Seq(
       "-encoding",
