@@ -1,4 +1,4 @@
-name: build compiler indices projects
+name: build
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build_and_test:
+  build:
 
     runs-on: ubuntu-latest
 

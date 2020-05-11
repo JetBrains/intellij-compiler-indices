@@ -1,3 +1,6 @@
+[![official JetBrains project](http://jb.gg/badges/official.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
+![build](https://github.com/jastice/intellij-compiler-indices/workflows/build/badge.svg)
+
 # Compiler Indices for IntelliJ IDEA Scala Plugin
 
 This repository contains two separate sbt projects:
