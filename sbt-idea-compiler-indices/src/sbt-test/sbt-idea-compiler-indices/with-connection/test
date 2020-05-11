@@ -1,0 +1,4 @@
+> set ideaPort := 63666
+> startConnection 63666
+> compile
+> checkResults

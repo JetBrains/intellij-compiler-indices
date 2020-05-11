@@ -1,0 +1,2 @@
+> compile
+$ absent project/target/.sbt-compilation-infos

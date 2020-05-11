@@ -1,0 +1,4 @@
+> compile
+$ exists project/target/.sbt-compilation-infos/root-compile
+> clean
+$ absent project/target/.sbt-compilation-infos

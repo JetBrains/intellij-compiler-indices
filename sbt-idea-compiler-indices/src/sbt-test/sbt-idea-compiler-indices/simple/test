@@ -1,0 +1,11 @@
+> compile
+> Compile/check 1
+> Test/compile
+> Test/check 1
+$ copy-file changes/success.scala src/main/scala/success.scala
+> Test/compile
+> Compile/check 2
+> Test/check 1
+$ copy-file changes/failed.scala src/main/scala/failed.scala
+- > compile
+> Compile/check 2

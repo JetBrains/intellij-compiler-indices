@@ -1,0 +1,5 @@
+- > disabled/compile
+> rebuildIdeaIndices
+> allEnabled/compile:check 1
+> allEnabled/test:check 1
+> allEnabled/checkIncrementality
