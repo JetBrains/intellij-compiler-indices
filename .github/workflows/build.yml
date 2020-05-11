@@ -1,4 +1,4 @@
-name: sbt-structure build & test
+name: build compiler indices projects
 
 on:
   push:
