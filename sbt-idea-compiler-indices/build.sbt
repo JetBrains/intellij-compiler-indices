@@ -29,6 +29,7 @@ lazy val root = (project in file("."))
       "-Xexperimental"
     ),
     libraryDependencies += "org.jetbrains" %% "scala-compiler-indices-protocol" % {
+      // depend on the latest non-dirty version of protocol. needs to be published (locally) to depend on
       val describe = dynverGitDescribeOutput.value
       val unsullied = describe.map(_.copy(dirtySuffix = GitDirtySuffix("")))
       if (describe.isVersionStable) version.value else unsullied.map(_.sonatypeVersion).getOrElse(version.value)
