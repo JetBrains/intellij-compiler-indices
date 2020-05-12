@@ -1,3 +1,5 @@
+import sbtdynver.GitDirtySuffix
+
 lazy val root = (project in file("."))
   .settings(
     bintrayOrganization := Option("jetbrains"),
@@ -26,7 +28,11 @@ lazy val root = (project in file("."))
       "-Xfuture",
       "-Xexperimental"
     ),
-    libraryDependencies += "org.jetbrains" %% "scala-compiler-indices-protocol" % version.value,
+    libraryDependencies += "org.jetbrains" %% "scala-compiler-indices-protocol" % {
+      val describe = dynverGitDescribeOutput.value
+      val unsullied = describe.map(_.copy(dirtySuffix = GitDirtySuffix("")))
+      if (describe.isVersionStable) version.value else unsullied.map(_.sonatypeVersion).getOrElse(version.value)
+    }
   )
   .enablePlugins(SbtPlugin)
   .settings(
