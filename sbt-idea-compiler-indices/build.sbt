@@ -33,7 +33,8 @@ lazy val root = (project in file("."))
       val describe = dynverGitDescribeOutput.value
       val unsullied = describe.map(_.copy(dirtySuffix = GitDirtySuffix("")))
       if (describe.isVersionStable) version.value else unsullied.map(_.sonatypeVersion).getOrElse(version.value)
-    }
+    },
+    resolvers += Resolver.sonatypeRepo("snapshots")
   )
   .enablePlugins(SbtPlugin)
   .settings(
