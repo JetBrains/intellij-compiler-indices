@@ -1,6 +1,6 @@
 name := "scala-compiler-indices-protocol"
 
-organization := "org.jetbrains"
+organization := "org.jetbrains.scala"
 
 scalaVersion := "2.13.2"
 
