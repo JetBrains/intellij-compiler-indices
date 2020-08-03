@@ -57,6 +57,18 @@ scriptedSbt := {
   }
 }
 
+
+/** Bintray settings */
+
+bintrayOrganization := Some("jetbrains")
+bintrayRepository := "sbt-plugins"
+bintrayVcsUrl := Option("https://github.com/JetBrains/intellij-compiler-indices")
+
+publishMavenStyle := {
+  if (BintrayPlugin.isEnabledViaProp) false
+  else publishMavenStyle.value
+}
+
 // enable bintray publishing only when the bintray flag prop is true.
 // sbt-bintray sets this the same way, but it is overridden by sbt-ci-release
 publishTo := {
