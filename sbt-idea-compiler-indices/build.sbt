@@ -56,3 +56,12 @@ scriptedSbt := {
     case "2.12" => "1.2.7"
   }
 }
+
+// enable bintray publishing only when the bintray flag prop is true.
+// sbt-bintray sets this the same way, but it is overridden by sbt-ci-release
+publishTo := {
+  val old = publishTo.value
+  val p = (publishTo in bintray).value
+  if (BintrayPlugin.isEnabledViaProp) p
+  else old
+}
