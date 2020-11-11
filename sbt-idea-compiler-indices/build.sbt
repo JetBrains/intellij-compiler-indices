@@ -6,7 +6,6 @@ crossSbtVersions   := Nil // handled by explicitly setting sbtVersion via scalaV
 crossScalaVersions := Seq("2.12.11", "2.10.7")
 sbtPlugin          := true
 scalaVersion       := "2.12.11"
-publishMavenStyle  := false
 organization       := "org.jetbrains.scala"
 name               := "sbt-idea-compiler-indices"
 description        := "sbt plugin for writing IntelliJ bytecode indices"
