@@ -36,6 +36,7 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 resolvers += Resolver.sonatypeRepo("public")
 sonatypeProfileName := "org.jetbrains"
 
+
 sbtVersion in pluginCrossBuild := {
   // keep this as low as possible to avoid running into binary incompatibility such as https://github.com/sbt/sbt/issues/5049
   scalaBinaryVersion.value match {
@@ -56,6 +57,23 @@ scriptedSbt := {
   }
 }
 
+scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/JetBrains/intellij-scala-indices-protocol"),
+    "git@github.com:username/projectname.git"
+  )
+)
+
+developers := List(
+  Developer(
+    id    = "sugakandrey",
+    name  = "Andrey Sugak",
+    email = "andrey.sugak@jetbrains.com",
+    url   = url("https://github.com/sugakandrey")
+  )
+)
+
+licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 /** Bintray settings */
 
