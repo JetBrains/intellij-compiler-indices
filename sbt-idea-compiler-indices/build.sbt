@@ -80,6 +80,7 @@ licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 bintrayOrganization := Some("jetbrains")
 bintrayRepository := "sbt-plugins"
 bintrayVcsUrl := Option("https://github.com/JetBrains/intellij-compiler-indices")
+bintrayPackage := "sbt-idea-compiler-indices-1x"
 
 publishMavenStyle := {
   if (BintrayPlugin.isEnabledViaProp) false
