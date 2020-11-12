@@ -82,5 +82,5 @@ val stableBintrayRelease = taskKey[Unit]("Release only stable version to bintray
 stableBintrayRelease := Def.taskDyn {
     val isSnapshot = dynverGitDescribeOutput.value.exists(_.isSnapshot)
     if (isSnapshot) Def.task { streams.value.log.info("SNAPSHOT version, skipping bintray publish") }
-    else bintrayRelease
+    else publish
   }.value
