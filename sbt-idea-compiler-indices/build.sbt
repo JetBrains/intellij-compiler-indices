@@ -57,6 +57,10 @@ scriptedSbt := {
   }
 }
 
+// Project metadata
+
+homepage := Some(url("https://github.com/JetBrains/intellij-scala-indices-protocol"))
+
 scmInfo := Some(
   ScmInfo(
     url("https://github.com/JetBrains/intellij-scala-indices-protocol"),
@@ -75,7 +79,7 @@ developers := List(
 
 licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-/** Bintray settings */
+// Bintray settings
 
 bintrayOrganization := Some("jetbrains")
 bintrayRepository := "sbt-plugins"
