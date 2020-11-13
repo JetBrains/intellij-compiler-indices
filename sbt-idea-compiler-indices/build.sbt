@@ -103,7 +103,8 @@ publishTo := {
 val stableBintrayRelease = taskKey[Unit]("Release only stable version to bintray")
 
 stableBintrayRelease := Def.taskDyn {
+    val isTag = CiReleasePlugin.isTag
     val isSnapshot = dynverGitDescribeOutput.value.exists(_.isSnapshot)
-    if (isSnapshot) Def.task { streams.value.log.info("SNAPSHOT version, skipping bintray publish") }
+    if (!isTag || isSnapshot) Def.task { streams.value.log.info("untagged or SNAPSHOT version, skipping bintray publish") }
     else publish
   }.value
