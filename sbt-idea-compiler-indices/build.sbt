@@ -59,12 +59,12 @@ scriptedSbt := {
 
 // Project metadata
 
-homepage := Some(url("https://github.com/JetBrains/intellij-scala-indices-protocol"))
+homepage := Some(url("https://github.com/JetBrains/intellij-compiler-indices"))
 
 scmInfo := Some(
   ScmInfo(
-    url("https://github.com/JetBrains/intellij-scala-indices-protocol"),
-    "git@github.com:username/projectname.git"
+    url("https://github.com/JetBrains/intellij-compiler-indices"),
+    "https://github.com/JetBrains/intellij-compiler-indices.git"
   )
 )
 
