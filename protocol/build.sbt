@@ -13,7 +13,7 @@ homepage := Some(url("https://github.com/JetBrains/intellij-scala-indices-protoc
 scmInfo := Some(
   ScmInfo(
     url("https://github.com/JetBrains/intellij-scala-indices-protocol"),
-    "git@github.com:username/projectname.git"
+    "https://github.com/JetBrains/intellij-scala-indices-protocol.git"
   )
 )
 
@@ -29,3 +29,8 @@ developers := List(
 licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 publishArtifact in Test := false
 sonatypeProfileName := "org.jetbrains"
+
+val publishAllCommand =
+  "; clean ; compile ; + test ; + publishLocal ; ci-release"
+
+addCommandAlias("publishAll", publishAllCommand)

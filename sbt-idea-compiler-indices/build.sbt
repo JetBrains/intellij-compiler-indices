@@ -78,33 +78,3 @@ developers := List(
 )
 
 licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
-
-// Bintray settings
-
-bintrayOrganization := Some("jetbrains")
-bintrayRepository := "sbt-plugins"
-bintrayVcsUrl := Option("https://github.com/JetBrains/intellij-compiler-indices")
-bintrayPackage := "sbt-idea-compiler-indices-1x"
-
-publishMavenStyle := {
-  if (BintrayPlugin.isEnabledViaProp) false
-  else publishMavenStyle.value
-}
-
-// enable bintray publishing only when the bintray flag prop is true.
-// sbt-bintray sets this the same way, but it is overridden by sbt-ci-release
-publishTo := {
-  val old = publishTo.value
-  val p = (publishTo in bintray).value
-  if (BintrayPlugin.isEnabledViaProp) p
-  else old
-}
-
-val stableBintrayRelease = taskKey[Unit]("Release only stable version to bintray")
-
-stableBintrayRelease := Def.taskDyn {
-    val isTag = CiReleasePlugin.isTag
-    val isSnapshot = dynverGitDescribeOutput.value.exists(_.isSnapshot)
-    if (!isTag || isSnapshot) Def.task { streams.value.log.info("untagged or SNAPSHOT version, skipping bintray publish") }
-    else publish
-  }.value
