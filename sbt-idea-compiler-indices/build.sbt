@@ -3,9 +3,9 @@ import sbtdynver.GitDirtySuffix
 enablePlugins(ScriptedPlugin)
 
 crossSbtVersions   := Nil // handled by explicitly setting sbtVersion via scalaVersion
-crossScalaVersions := Seq("2.12.11", "2.10.7")
+crossScalaVersions := Seq("2.12.17", "2.10.7")
 sbtPlugin          := true
-scalaVersion       := "2.12.11"
+scalaVersion       := "2.12.17"
 organization       := "org.jetbrains.scala"
 name               := "sbt-idea-compiler-indices"
 description        := "sbt plugin for writing IntelliJ bytecode indices"
@@ -32,8 +32,8 @@ libraryDependencies += "org.jetbrains.scala" %% "scala-compiler-indices-protocol
   if (describe.isVersionStable) version.value else unsullied.map(_.sonatypeVersion).getOrElse(version.value)
 }
 
-resolvers += Resolver.sonatypeRepo("snapshots")
-resolvers += Resolver.sonatypeRepo("public")
+resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+resolvers ++= Resolver.sonatypeOssRepos("public")
 sonatypeProfileName := "org.jetbrains"
 
 
@@ -64,7 +64,7 @@ homepage := Some(url("https://github.com/JetBrains/intellij-compiler-indices"))
 scmInfo := Some(
   ScmInfo(
     url("https://github.com/JetBrains/intellij-compiler-indices"),
-    "https://github.com/JetBrains/intellij-compiler-indices.git"
+    "scm:git:git@github.com:JetBrains/intellij-compiler-indices.git"
   )
 )
 
