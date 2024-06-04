@@ -3,9 +3,9 @@ import sbtdynver.GitDirtySuffix
 enablePlugins(ScriptedPlugin)
 
 crossSbtVersions   := Nil // handled by explicitly setting sbtVersion via scalaVersion
-crossScalaVersions := Seq("2.12.17", "2.10.7")
+crossScalaVersions := Seq("2.12.19", "2.10.7")
 sbtPlugin          := true
-scalaVersion       := "2.12.17"
+scalaVersion       := "2.12.19"
 organization       := "org.jetbrains.scala"
 name               := "sbt-idea-compiler-indices"
 description        := "sbt plugin for writing IntelliJ bytecode indices"

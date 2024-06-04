@@ -2,9 +2,9 @@ name := "scala-compiler-indices-protocol"
 
 organization := "org.jetbrains.scala"
 
-scalaVersion := "2.13.10"
+scalaVersion := "2.13.14"
 
-crossScalaVersions := Seq("2.10.7", "2.12.17", "2.13.10")
+crossScalaVersions := Seq("2.10.7", "2.12.19", "2.13.14")
 
 libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
 
