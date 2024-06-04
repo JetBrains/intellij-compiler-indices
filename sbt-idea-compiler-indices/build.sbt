@@ -45,7 +45,6 @@ sbtVersion in pluginCrossBuild := {
   }
 }
 
-scripted := {} // temporarily disable scripted tests, because of buildserver issues
 scriptedLaunchOpts ++= Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
 scriptedBufferLog := false
 
