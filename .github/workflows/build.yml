@@ -1,4 +1,4 @@
-name: build
+name: Build
 
 on:
   push:
@@ -18,12 +18,12 @@ jobs:
         distribution: 'temurin'
         java-version: '8'
         cache: 'sbt'
-    - name: build protocol
+    - name: Build protocol
       run: sbt "+ publishLocal"
       working-directory: protocol
-    - name: build sbt plugin
+    - name: Build sbt plugin
       run: sbt "+ publishLocal"
       working-directory: sbt-idea-compiler-indices
-    - name: run scripted tests
+    - name: Run scripted tests
       run: sbt scripted
       working-directory: sbt-idea-compiler-indices
