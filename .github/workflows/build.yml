@@ -12,37 +12,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: olafurpg/setup-scala@v10
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
       with:
-        java-version: adopt@1.8
-    - name: cache coursier cache
-      uses: actions/cache@v2
-      with:
-        path: ~/.coursier/cache
-        key: ${{ runner.os }}-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/**/*.scala') }}
-        restore-keys: |
-          ${{ runner.os }}-coursier-cache-${{ hashFiles('**/*.sbt') }}
-          ${{ runner.os }}-coursier-cache
-    - name: cache ivy cache
-      uses: actions/cache@v1
-      with:
-        path: ~/.ivy2/cache
-        key: ${{ runner.os }}-ivy-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/**/*.scala') }}
-        restore-keys: |
-          ${{ runner.os }}-ivy-cache-${{ hashFiles('**/*.sbt') }}
-          ${{ runner.os }}-ivy-cache
-    - name: cache sbt
-      uses: actions/cache@v1
-      with:
-        path: ~/.sbt
-        key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/**/*.scala') }}
-        restore-keys: |
-          ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-          ${{ runner.os }}-sbt
+        distribution: 'temurin'
+        java-version: '8'
+        cache: 'sbt'
     - name: build protocol
       run: sbt "+ publishLocal"
       working-directory: protocol
     - name: build sbt plugin
-      run: sbt "^ publishLocal"
+      run: sbt "+ publishLocal"
+      working-directory: sbt-idea-compiler-indices
+    - name: run scripted tests
+      run: sbt scripted
       working-directory: sbt-idea-compiler-indices
