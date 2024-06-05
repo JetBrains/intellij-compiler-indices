@@ -18,6 +18,8 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
 
   object autoImport {
     lazy val incrementalityType = settingKey[IncrementalityType]("internal use only: Configures index incrementality type")
+    lazy val notifyIdeaCompilationStart = taskKey[Option[IdeaConnectionData]]("internal use only: Notifies IDEA that compilation has started")
+    lazy val notifyIdeaCompilationEnd = taskKey[Unit]("internal use only: Notifies IDEA that compilation has ended")
     lazy val ideaPort           = settingKey[Int]("Port to talk to IDEA indexer")
 
     lazy val rebuildIndices = Command.command("rebuildIdeaIndices") { state =>
@@ -44,12 +46,11 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
 
   private[this] def perConfig: Seq[Def.Setting[_]] = Seq(
     incOptions ~= patchIncOptions,
-    compile    := Def.taskDyn {
-      val previousValue = compile.taskValue
-      val buildBaseDir  = (baseDirectory in ThisBuild).value
+    notifyIdeaCompilationStart := Def.taskDyn[Option[IdeaConnectionData]] {
+      val buildBaseDir = (baseDirectory in ThisBuild).value
 
-      if (!isIdeaProject(buildBaseDir)) Def.task(previousValue.value)
-      else {
+      if (!isIdeaProject(buildBaseDir)) Def.task(None)
+      else Def.task {
         val log             = streams.value.log
         val projectId       = thisProject.value.id
         val configurationId = configuration.value
@@ -66,65 +67,78 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
           try   notifyIdeaStart(port, buildBaseDir.getPath, compilationId)
           catch { case e: Throwable => infoDir.unlock(log = log.debug(_)); throw e }
 
-        Def.taskDyn {
-          val previousResult = itype match {
-            case IncrementalityType.Incremental    => previousCompile.value
-            case IncrementalityType.NonIncremental => PreviousResult.empty()
-          }
-
-          Def.task {
-            val oldTaskValue = previousValue.value
-            val isOffline    = socket.isEmpty
-
-            val pconfig = configurationId match {
-              case Compile => PConfiguration.Compile
-              case Test    => PConfiguration.Test
-              case conf =>
-                sys.error(
-                  s"Unsupported configuration $conf. Only Compile and Test configuration are supported by idea-compiler-indices."
-                )
-            }
-
-            val compilationInfoFile = dumpCompilationInfo(
-              isOffline,
-              oldTaskValue,
-              previousResult,
-              projectId,
-              version,
-              itype,
-              infoDir,
-              pconfig,
-              compilationStartTimestamp,
-              compilationId
-            )
-
-            val result = CompilationResult(
-              successful = true,
-              compilationStartTimestamp,
-              compilationInfoFile
-            )
-
-            socket.foreach(notifyFinish(_, result))
-            oldTaskValue
-          }
-        }.result.map {
-          case Inc(cause) =>
-            // compilation failed case
-            val failedRes = CompilationResult(
-              successful = false,
-              compilationStartTimestamp,
-              None
-            )
-
-            socket.foreach(notifyFinish(_, failedRes))
-            throw cause
-          case Value(canalysis) => canalysis
-        }.andFinally {
-          try     infoDir.unlock(log = log.debug(_))
-          finally socket.foreach(_.close())
-        }
+        Some(IdeaConnectionData(socket, projectId, configurationId, compilationId, itype, version, infoDir, compilationStartTimestamp))
       }
-    }.value
+    }.value,
+    notifyIdeaCompilationEnd := Def.taskDyn[Unit] {
+      val connectionData = notifyIdeaCompilationStart.value
+
+      connectionData match {
+        case Some(IdeaConnectionData(socket, projectId, configurationId, compilationId, itype, version, infoDir, compilationStartTimestamp)) =>
+          Def.taskDyn {
+            val manipulateBytecodeResult = manipulateBytecode.result.value
+            Def.task {
+              val log = streams.value.log
+              try {
+                manipulateBytecodeResult match {
+                  case Value(compileResult) =>
+                    val isOffline = socket.isEmpty
+
+                    val pconfig = configurationId match {
+                      case Compile => PConfiguration.Compile
+                      case Test => PConfiguration.Test
+                      case conf =>
+                        sys.error(
+                          s"Unsupported configuration $conf. Only Compile and Test configuration are supported by idea-compiler-indices."
+                        )
+                    }
+
+                    val previousResult = itype match {
+                      case IncrementalityType.Incremental => previousCompile.value
+                      case IncrementalityType.NonIncremental => PreviousResult.empty()
+                    }
+
+                    val compilationInfoFile = dumpCompilationInfo(
+                      isOffline,
+                      compileResult.analysis,
+                      previousResult,
+                      projectId,
+                      version,
+                      itype,
+                      infoDir,
+                      pconfig,
+                      compilationStartTimestamp,
+                      compilationId
+                    )
+
+                    val result = CompilationResult(
+                      successful = true,
+                      compilationStartTimestamp,
+                      compilationInfoFile
+                    )
+
+                    socket.foreach(notifyFinish(_, result))
+                  case Inc(cause) =>
+                    // compilation failed case
+                    val failedRes = CompilationResult(
+                      successful = false,
+                      compilationStartTimestamp,
+                      None
+                    )
+
+                    socket.foreach(notifyFinish(_, failedRes))
+                    throw cause
+                }
+              } finally {
+                try infoDir.unlock(log = log.debug(_))
+                finally socket.foreach(_.close())
+              }
+            }
+          }
+        case None => Def.task(())
+      }
+    }.value,
+    compile := compile.dependsOn(notifyIdeaCompilationEnd).value
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
