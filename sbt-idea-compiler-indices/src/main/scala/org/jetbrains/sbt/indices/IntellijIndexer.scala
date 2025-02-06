@@ -24,7 +24,7 @@ object IntellijIndexer {
   }
 
   def compilationInfoDir(base: File, projectId: String): File =
-    projectCompilationInfoDir(base, projectId).toFile
+    projectCompilationInfoDir(base.toPath, projectId).toFile
 
   def isIdeaProject(base: File): Boolean = Files.isDirectory(base.toPath.resolve(".idea"))
 
@@ -74,7 +74,7 @@ object IntellijIndexer {
 
       classes.flatMap { clsFile =>
         val source = relations.produced(clsFile).headOption
-        source.map(CompiledClass(_, clsFile))
+        source.map(f => CompiledClass(f.toPath, clsFile.toPath))
       }(collection.breakOut)
     }
 
@@ -90,7 +90,7 @@ object IntellijIndexer {
       isIncremental,
       scalaVersion,
       configuration,
-      deletedSources,
+      deletedSources.map(_.toPath),
       generatedClasses,
       timestamp
     )

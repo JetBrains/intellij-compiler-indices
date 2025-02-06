@@ -1,5 +1,5 @@
 package org.jetbrains.plugins.scala.indices.protocol
 
-import java.io.File
+import java.nio.file.Path
 
-final case class CompiledClass(source: File, output: File)
+final case class CompiledClass(source: Path, output: Path)
