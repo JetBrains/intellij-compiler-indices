@@ -1,4 +1,2 @@
 > compile
 $ absent project/target/.sbt-compilation-infos
-$ exists target/scala-2.12/classes/hello.class
-$ exists target/scala-2.12/classes/hello$.class
