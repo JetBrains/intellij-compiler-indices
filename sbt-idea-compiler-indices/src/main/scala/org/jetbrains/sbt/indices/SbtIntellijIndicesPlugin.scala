@@ -56,7 +56,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
         val compilationId   = UUID.randomUUID()
         val itype           = incrementalityType.value
         val version         = scalaBinaryVersion.value
-        val infoDir         = compilationInfoDir(buildBaseDir, s"$projectId-$configurationId")
+        val infoDir         = compilationInfoDir(buildBaseDir, s"$projectId-$configurationId").toPath
         val port            = ideaPort.value
 
         infoDir.lock(log = log.debug(_))
@@ -92,7 +92,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
               projectId,
               version,
               itype,
-              infoDir,
+              infoDir.toFile,
               pconfig,
               compilationStartTimestamp,
               compilationId
@@ -131,7 +131,7 @@ object SbtIntellijIndicesPlugin extends AutoPlugin { self =>
     inConfig(Compile)(perConfig) ++ inConfig(Test)(perConfig) ++ Seq(
       cleanFiles += {
         val base = (baseDirectory in ThisBuild).value
-        compilationInfoBaseDir(base).toFile
+        compilationInfoBaseDir(base.toPath).toFile
       },
       commands += rebuildIndices
     )
