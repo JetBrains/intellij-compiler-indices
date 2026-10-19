@@ -1,6 +1,8 @@
 name := "scala-compiler-indices-protocol"
 
 organization := "org.jetbrains.scala"
+organizationName := "JetBrains"
+organizationHomepage := Some(url("https://www.jetbrains.com/"))
 
 scalaVersion := "2.13.16"
 
@@ -28,7 +30,6 @@ developers := List(
 
 licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 Test / publishArtifact := false
-sonatypeProfileName := "org.jetbrains"
 
 val publishAllCommand =
   "; clean ; compile ; + test ; + publishLocal ; ci-release"
