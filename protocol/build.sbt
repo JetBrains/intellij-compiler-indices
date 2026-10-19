@@ -6,7 +6,7 @@ organizationHomepage := Some(url("https://www.jetbrains.com/"))
 
 scalaVersion := "2.13.18"
 
-crossScalaVersions := Seq("2.10.7", "2.12.21", "2.13.18")
+crossScalaVersions := Seq("2.10.7", "2.12.21", "2.13.18", "3.3.8")
 
 libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
 
