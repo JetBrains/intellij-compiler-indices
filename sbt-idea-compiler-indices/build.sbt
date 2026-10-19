@@ -3,10 +3,14 @@ import sbtdynver.GitDirtySuffix
 enablePlugins(ScriptedPlugin)
 
 crossSbtVersions   := Nil // handled by explicitly setting sbtVersion via scalaVersion
-crossScalaVersions := Seq("2.12.20", "2.10.7")
+crossScalaVersions := Seq("2.12.21", "2.10.7")
 sbtPlugin          := true
-scalaVersion       := "2.12.20"
-organization       := "org.jetbrains.scala"
+scalaVersion       := "2.12.21"
+
+organization         := "org.jetbrains.scala"
+organizationName     := "JetBrains"
+organizationHomepage := Some(url("https://www.jetbrains.com/"))
+
 name               := "sbt-idea-compiler-indices"
 description        := "sbt plugin for writing IntelliJ bytecode indices"
 scalacOptions      := Seq(
@@ -34,7 +38,6 @@ libraryDependencies += "org.jetbrains.scala" %% "scala-compiler-indices-protocol
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 resolvers ++= Resolver.sonatypeOssRepos("public")
-sonatypeProfileName := "org.jetbrains"
 
 
 sbtVersion in pluginCrossBuild := {

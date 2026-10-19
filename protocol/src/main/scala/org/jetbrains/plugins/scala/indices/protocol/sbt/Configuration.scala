@@ -7,8 +7,8 @@ sealed trait Configuration
 object Configuration {
   val allConfigurations: Set[Configuration] = Set(Test, Compile)
 
-  final case object Test    extends Configuration
-  final case object Compile extends Configuration
+  case object Test    extends Configuration
+  case object Compile extends Configuration
 
   implicit val configurationFormat: JsonFormat[Configuration] = new JsonFormat[Configuration] {
     override def read(json: JsValue): Configuration = json match {
