@@ -6,7 +6,11 @@ crossSbtVersions   := Nil // handled by explicitly setting sbtVersion via scalaV
 crossScalaVersions := Seq("2.12.20", "2.10.7")
 sbtPlugin          := true
 scalaVersion       := "2.12.20"
-organization       := "org.jetbrains.scala"
+
+organization         := "org.jetbrains.scala"
+organizationName     := "JetBrains"
+organizationHomepage := Some(url("https://www.jetbrains.com/"))
+
 name               := "sbt-idea-compiler-indices"
 description        := "sbt plugin for writing IntelliJ bytecode indices"
 scalacOptions      := Seq(
@@ -34,7 +38,6 @@ libraryDependencies += "org.jetbrains.scala" %% "scala-compiler-indices-protocol
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 resolvers ++= Resolver.sonatypeOssRepos("public")
-sonatypeProfileName := "org.jetbrains"
 
 
 sbtVersion in pluginCrossBuild := {
